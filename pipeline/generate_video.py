@@ -1,11 +1,6 @@
-"""
-ساخت ویدیوی کوتاه از یک خبر (تیتر + خلاصه)
-خروجی: MP4 عمودی 1080x1920 با صدای TTS و متن روی صفحه
-"""
-
 import os
+import subprocess
 import textwrap
-import pyttsx3
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import AudioFileClip, ImageClip, CompositeVideoClip, ColorClip
 
@@ -15,11 +10,10 @@ FONT_PATH_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 
 def generate_tts(text: str, out_path: str) -> str:
-    engine = pyttsx3.init()
-    engine.setProperty("rate", 165)
-    engine.setProperty("volume", 1.0)
-    engine.save_to_file(text, out_path)
-    engine.runAndWait()
+    subprocess.run(
+        ["espeak", "-s", "155", "-v", "en", "-w", out_path, text],
+        check=True,
+    )
     return out_path
 
 
