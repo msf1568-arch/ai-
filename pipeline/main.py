@@ -107,12 +107,10 @@ def main():
     candidates = fetch_candidates(seen)
     print(f"{len(candidates)} new candidate item(s) found.")
 
-    made = 0
+made = 0
     for item in candidates:
         if made >= MAX_ITEMS:
             break
-
-        seen.add(item["link"])
 
         try:
             result = ask_mistral(item)
@@ -122,6 +120,7 @@ def main():
 
         if not result.get("is_relevant"):
             print(f"Skipped (not relevant): {item['title']}")
+            seen.add(item["link"])
             continue
 
         title_short = result["title_short"]
@@ -136,6 +135,7 @@ def main():
 
         caption = f"{title_short}\n\n{summary_short}\n\nSource: {item['link']}"
         send_video_to_telegram(video_path, caption)
+        seen.add(item["link"])
         made += 1
         time.sleep(2)
 
