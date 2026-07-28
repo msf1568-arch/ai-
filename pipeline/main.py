@@ -1,12 +1,10 @@
 """
-اجرای کامل پایپ‌لاین در یک اسکریپت (برای اجرا در GitHub Actions)
-
-مراحل:
-1. گرفتن خبر از چند RSS
-2. حذف موارد تکراری (بر اساس فایل seen_links.json که در ریپو ذخیره می‌شه)
-3. فیلتر و ترجمه هر خبر با Gemini (حداکثر MAX_ITEMS مورد در هر اجرا)
-4. ساخت ویدیو برای هر خبر تأییدشده
-5. ارسال ویدیو + کپشن به تلگرام
+Full pipeline (English output, Mistral for filtering/summarizing):
+1. Fetch news from RSS feeds
+2. Skip already-seen links (tracked in seen_links.json)
+3. Filter + summarize each item with Mistral (max MAX_ITEMS per run)
+4. Generate a short vertical video for each approved item
+5. Send the video + caption to Telegram
 """
 
 import os
@@ -18,7 +16,7 @@ import feedparser
 
 from generate_video import build_video
 
-GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+MISTRAL_API_KEY = os.environ["MISTRAL_API_KEY"]
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
@@ -31,10 +29,7 @@ RSS_FEEDS = [
     "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
 ]
 
-GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-flash-latest:generateContent?key=" + GEMINI_API_KEY
-)
+MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions"
 
 
 def load_seen():
@@ -65,20 +60,28 @@ def fetch_candidates(seen):
     return candidates
 
 
-def ask_gemini(item):
+def ask_mistral(item):
     prompt = (
-        "این خبر هوش مصنوعی رو بررسی کن:\n\n"
-        f"تیتر: {item['title']}\nخلاصه: {item['summary']}\n\n"
-        "به فارسی پاسخ بده، فقط JSON خام بدون توضیح اضافه و بدون backtick:\n"
-        '{"is_relevant": true/false, "title_fa": "تیتر کوتاه و جذاب فارسی", '
-        '"summary_fa": "خلاصه ۲-۳ جمله‌ای فارسی برای روایت صوتی"}\n\n'
-        "is_relevant باید true باشه فقط اگه خبر واقعاً برای مخاطب عمومی علاقه‌مند "
-        "به AI جذاب، دقیق، و بدون ابهام باشه. اگه کوچک‌ترین شکی داری، false بذار."
+        "Review this AI news item:\n\n"
+        f"Title: {item['title']}\nSummary: {item['summary']}\n\n"
+        "Respond with raw JSON only, no extra text, no markdown/backticks:\n"
+        '{"is_relevant": true/false, "title_short": "short catchy title (under 12 words)", '
+        '"summary_short": "2-3 sentence summary suitable for a voiceover narration"}\n\n'
+        "Set is_relevant to true ONLY if this news is genuinely interesting and understandable "
+        "for a general audience interested in AI (not overly technical/academic, not a rumor). "
+        "If in doubt, set it to false."
     )
-    body = {"contents": [{"parts": [{"text": prompt}]}]}
-    resp = requests.post(GEMINI_URL, json=body, timeout=60)
+    body = {
+        "model": "mistral-small-latest",
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {MISTRAL_API_KEY}",
+    }
+    resp = requests.post(MISTRAL_URL, json=body, headers=headers, timeout=60)
     resp.raise_for_status()
-    raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    raw = resp.json()["choices"][0]["message"]["content"]
     cleaned = re.sub(r"```json|```", "", raw).strip()
     return json.loads(cleaned)
 
@@ -93,50 +96,45 @@ def send_video_to_telegram(video_path, caption):
             timeout=180,
         )
     if resp.status_code != 200:
-        print(f"⚠️ خطا در ارسال تلگرام: {resp.text}")
+        print(f"Telegram send error: {resp.text}")
     else:
-        print("✅ ویدیو در تلگرام ارسال شد")
-
-
-def send_text_to_telegram(text):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": text}, timeout=30)
+        print("Video sent to Telegram successfully.")
 
 
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     seen = load_seen()
     candidates = fetch_candidates(seen)
-    print(f"{len(candidates)} خبر جدید پیدا شد.")
+    print(f"{len(candidates)} new candidate item(s) found.")
 
     made = 0
     for item in candidates:
         if made >= MAX_ITEMS:
             break
 
-        seen.add(item["link"])  # حتی اگه رد بشه، دیگه دوباره چکش نمی‌کنیم
+        seen.add(item["link"])
 
         try:
-            result = ask_gemini(item)
+            result = ask_mistral(item)
         except Exception as e:
-            print(f"خطا در فراخوانی Gemini برای «{item['title']}»: {e}")
+            print(f"Mistral error for '{item['title']}': {e}")
             continue
 
         if not result.get("is_relevant"):
-            print(f"رد شد (نامرتبط): {item['title']}")
+            print(f"Skipped (not relevant): {item['title']}")
             continue
 
-        title_fa = result["title_fa"]
-        summary_fa = result["summary_fa"]
+        title_short = result["title_short"]
+        summary_short = result["summary_short"]
         video_path = os.path.join(OUTPUT_DIR, f"video_{made+1}.mp4")
 
         try:
-            build_video(title_fa, summary_fa, item["link"], video_path)
+            build_video(title_short, summary_short, item["link"], video_path)
         except Exception as e:
-            print(f"خطا در ساخت ویدیو برای «{title_fa}»: {e}")
+            print(f"Video build error for '{title_short}': {e}")
             continue
 
-        caption = f"📌 {title_fa}\n\n{summary_fa}\n\n🔗 {item['link']}"
+        caption = f"{title_short}\n\n{summary_short}\n\nSource: {item['link']}"
         send_video_to_telegram(video_path, caption)
         made += 1
         time.sleep(2)
@@ -144,7 +142,7 @@ def main():
     save_seen(seen)
 
     if made == 0:
-        print("هیچ ویدیویی در این اجرا ساخته نشد.")
+        print("No video was generated in this run.")
 
 
 if __name__ == "__main__":
