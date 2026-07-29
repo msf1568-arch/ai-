@@ -1,5 +1,5 @@
 """
-AI News Pipeline v8 - Prompt Generator
+AI News Pipeline v9
 """
 
 import os
@@ -18,7 +18,7 @@ TCHAT = os.environ.get("TELEGRAM_CHAT_ID", "")
 MAX_S = int(os.environ.get("MAX_SHORTS", "3"))
 SEEN_FILE = "seen_links.json"
 OUTDIR = "output"
-API_URL = "https://api.mistral.ai/v1/chat/completions"
+API = "https://api.mistral.ai/v1/chat/completions"
 
 
 def load_seen():
@@ -38,14 +38,24 @@ def rank(items, count=10):
         return []
     batch = items[:30]
     prompt = (
-        "You are an AI content curator. "
-        "Pick TOP " + str(count) + " most viral "
+        "You are an AI content curator "
+        "for a YouTube Shorts channel. "
+        "Pick TOP " + str(count) + " MOST "
+        "ENGAGING and INTERESTING items "
         "from these " + str(len(batch)) + " items. "
+        "Choose items that: "
+        "1) Shock or surprise the audience "
+        "2) Reveal something new or unknown "
+        "3) Have real impact on peoples lives "
+        "4) Create curiosity or debate "
+        "5) Are trending right now. "
+        "AVOID boring corporate announcements. "
         "For each return: "
-        "title_short (under 10 words), "
-        "narration (exactly 6 sentences, "
-        "start with a hook question, "
-        "end with call to action), "
+        "title_short (catchy, under 10 words), "
+        "narration (6-8 sentences, "
+        "start with a powerful hook question, "
+        "build tension, reveal the story, "
+        "end with mind-blowing fact and CTA), "
         "link, source, type, score. "
         'Return JSON: {"results": [...]}\n'
         "ITEMS:\n"
@@ -64,10 +74,8 @@ def rank(items, count=10):
     }
     try:
         r = requests.post(
-            API_URL,
-            headers=headers,
-            json=body,
-            timeout=90,
+            API, headers=headers,
+            json=body, timeout=90,
         )
         r.raise_for_status()
         txt = r.json()
@@ -89,7 +97,7 @@ def rank(items, count=10):
 
 def send_tg(text):
     if not TBOT or not TCHAT:
-        print("Telegram not configured")
+        print("TG not configured")
         return
     url = "https://api.telegram.org/bot"
     url = url + TBOT + "/sendMessage"
@@ -102,48 +110,83 @@ def send_tg(text):
         payload = {
             "chat_id": TCHAT,
             "text": chunk,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
         }
         try:
             r = requests.post(
-                url,
-                data=payload,
-                timeout=30,
+                url, data=payload, timeout=30,
             )
             if r.status_code == 200:
                 print("  Sent to TG")
             else:
-                print("  TG err: " + r.text[:100])
+                print("  TG: " + r.text[:100])
             time.sleep(1)
         except Exception as e:
-            print("  TG err: " + str(e))
+            print("  TG: " + str(e))
 
 
-def send_tg_doc(path, caption):
+def send_doc(path, cap):
     if not TBOT or not TCHAT:
         return
     url = "https://api.telegram.org/bot"
     url = url + TBOT + "/sendDocument"
-    payload = {
-        "chat_id": TCHAT,
-        "caption": caption[:1024],
-    }
     try:
         with open(path, "rb") as f:
-            files = {"document": f}
             r = requests.post(
                 url,
-                data=payload,
-                files=files,
+                data={"chat_id": TCHAT, "caption": cap},
+                files={"document": f},
                 timeout=60,
             )
         if r.status_code == 200:
-            print("  Doc sent to TG")
+            print("  Doc sent")
     except Exception as e:
-        print("  TG err: " + str(e))
+        print("  Doc: " + str(e))
 
 
 def main():
-    print("=" * 50)
-    print("AI NEWS PIPELINE v8 
+    print("=" * 40)
+    print("AI NEWS v9")
+    print("=" * 40)
+    os.makedirs(OUTDIR, exist_ok=True)
+    seen = load_seen()
+    print(str(len(seen)) + " seen")
+    print("Fetching...")
+    items = fetch_all_items(seen)
+    if not items:
+        print("No items.")
+        return
+    print("Ranking...")
+    ranked = rank(items, count=MAX_S)
+    if not ranked:
+        print("No ranked.")
+        return
+    print(str(len(ranked)) + " selected")
+    ok = 0
+    for i, item in enumerate(ranked):
+        t = item.get("title_short", "AI")
+        narr = item.get("narration", "")
+        s = item.get("source", "AI")
+        lk = item.get("link", "")
+        ct = item.get("type", "news")
+        vp = os.path.join(OUTDIR, "p" + str(i+1) + ".mp4")
+        print("#" + str(i+1) + ": " + t)
+        try:
+            folder, text, data = build_shorts_video(
+                t, narr, s, vp, ct
+            )
+            send_tg(text[:4000])
+            jp = os.path.join(folder, "prompts.json")
+            if os.path.exists(jp):
+                send_doc(jp, t)
+            seen.add(lk)
+            ok += 1
+        except Exception as e:
+            print("ERR: " + str(e))
+            traceback.print_exc()
+        time.sleep(3)
+    save_seen(seen)
+    print("Done! " + str(ok) + "/" + str(len(ranked)))
+
+
+if __name__ == "__main__":
+    main()
