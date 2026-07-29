@@ -36,6 +36,7 @@ jobs:
       - name: Run pipeline
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           MAX_SHORTS: ${{ github.event.inputs.max_shorts || '3' }}
