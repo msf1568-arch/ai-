@@ -1,5 +1,5 @@
 """
-AI News & Discovery Pipeline - Mistral Edition
+AI News & Discovery Pipeline - Pro Edition
 """
 
 import os
@@ -38,11 +38,15 @@ def rank_with_mistral(items, count=10):
     if not items:
         return []
     items_to_check = items[:30]
-    prompt = f"""You are an AI content curator. Analyze these {len(items_to_check)} items.
-Select TOP {count} most viral/important ones.
-For each create: title_short (under 10 words), summary_short (2-3 sentences).
+    prompt = f"""You are an elite YouTube Shorts scriptwriter for an AI News channel.
+Analyze these {len(items_to_check)} items. Select TOP {count} most viral and important ones.
+For each item create:
+1) "title_short": Catchy viral title under 8 words.
+2) "script": An engaging, high-retention script of EXACTLY 80-100 words (takes ~45 seconds to speak). Start with a punchy hook, explain why it matters, and end with an insightful thought. Do NOT include stage directions.
+3) "badge": One of ["🔥 BREAKING", "⚡ NEW TOOL", "🧠 AI RESEARCH", "💡 DISCOVERY"].
+
 Return ONLY valid JSON array:
-[{{"title_short": "...", "summary_short": "...", "link": "...", "source": "...", "type": "...", "score": 95}}]
+[{{"title_short": "...", "script": "...", "badge": "...", "link": "...", "source": "...", "type": "...", "score": 95}}]
 ITEMS:
 {json.dumps(items_to_check, ensure_ascii=False)}"""
 
@@ -99,7 +103,7 @@ def send_to_telegram(video_path, caption):
 
 def main():
     print("=" * 50)
-    print("AI NEWS & DISCOVERY PIPELINE")
+    print("AI NEWS & DISCOVERY PIPELINE - PRO")
     print("=" * 50)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     seen = load_seen()
@@ -126,15 +130,16 @@ def main():
     shorts_created = 0
     for i, item in enumerate(shorts_items):
         title = item.get("title_short", "AI Update")
-        summary = item.get("summary_short", "")
+        script = item.get("script", item.get("summary_short", ""))
         source = item.get("source", "AI News")
+        badge = item.get("badge", "🔥 BREAKING")
         link = item.get("link", "")
         content_type = item.get("type", "news")
         video_path = os.path.join(OUTPUT_DIR, f"shorts_{i+1}.mp4")
         print(f"\nShorts {i+1}: {title}")
         try:
-            build_shorts_video(title, summary, source, video_path, content_type)
-            caption = f"<b>{title}</b>\n\n{summary}\n\n{link}"
+            build_shorts_video(title, script, source, video_path, badge, content_type)
+            caption = f"<b>{badge}: {title}</b>\n\n{script}\n\n🔗 Source: {link}"
             send_to_telegram(video_path, caption)
             seen.add(link)
             shorts_created += 1
