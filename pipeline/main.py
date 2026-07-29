@@ -7,12 +7,11 @@ import re
 import json
 import time
 import requests
-import google.generativeai as genai
 
 from sources import fetch_all_items
 from generate_video import build_shorts_video, build_long_video
 
-GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+MISTRAL_API_KEY = os.environ["MISTRAL_API_KEY"]
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
@@ -35,11 +34,11 @@ def save_seen(seen):
         json.dump(sorted(seen), f, ensure_ascii=False, indent=2)
 
 
-def rank_with_gemini(items, count=10):
+def rank_with_mistral(items, count=10):
     if not items:
         return []
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    genai.configure(api_key=MISTRAL_API_KEY)
+    model = genai.GenerativeModel("mistral-small-latest")
     items_to_check = items[:30]
     prompt = f"""You are an AI content curator. Analyze these {len(items_to_check)} items.
 Select TOP {count} most viral/important ones.
@@ -58,7 +57,7 @@ ITEMS:
             return json.loads(match.group())
         return json.loads(cleaned)
     except Exception as e:
-        print(f"Gemini error: {e}")
+        print(f"Mistral error: {e}")
         return []
 
 
@@ -101,9 +100,9 @@ def main():
         print("No new items. Exiting.")
         return
 
-    print("\nRANKING WITH GEMINI AI...")
+    print("\nRANKING WITH MISTRAL AI...")
     total_needed = MAX_SHORTS + (5 if MAKE_LONG_VIDEO else 0)
-    ranked_items = rank_with_gemini(all_items, count=total_needed)
+    ranked_items = rank_with_mistral(all_items, count=total_needed)
     if not ranked_items:
         print("No items passed ranking. Exiting.")
         return
