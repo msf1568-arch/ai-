@@ -1,8 +1,9 @@
 """
-Video Generator
+Professional Video Generator - AI Voice + Modern UI Card
 """
 
 import os
+import asyncio
 import textwrap
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (
@@ -12,7 +13,7 @@ from moviepy.editor import (
     ColorClip,
     concatenate_videoclips,
 )
-from gtts import gTTS
+import edge_tts
 
 SW = 1080
 SH = 1920
@@ -30,93 +31,140 @@ def get_font(path, size):
 
 
 def make_tts(text, out_path):
-    tts = gTTS(text=text, lang="en", slow=False)
-    tts.save(out_path)
+    async def _run():
+        communicate = edge_tts.Communicate(
+            text,
+            voice="en-US-ChristopherNeural",
+            rate="+4%",
+            pitch="+0Hz",
+        )
+        await communicate.save(out_path)
+
+    asyncio.run(_run())
     return out_path
 
 
-def wrap(text, w=28):
+def wrap(text, w=26):
     return "\n".join(textwrap.wrap(text, width=w))
 
 
 def type_color(t):
     c = {
-        "news": (100, 200, 255),
-        "tool": (100, 255, 150),
-        "research": (255, 150, 100),
-        "discovery": (200, 100, 255),
+        "news": (56, 189, 248),
+        "tool": (74, 222, 128),
+        "research": (251, 146, 60),
+        "discovery": (192, 132, 252),
     }
-    return c.get(t, (100, 200, 255))
+    return c.get(t, (56, 189, 248))
 
 
-def make_frame(title, summary, source, ctype="news"):
-    bg = (15, 20, 35)
-    img = Image.new("RGB", (SW, SH), color=bg)
+def make_frame(title, script, source, badge="🔥 BREAKING", ctype="news"):
+    img = Image.new("RGB", (SW, SH), color=(10, 14, 23))
     draw = ImageDraw.Draw(img)
     ac = type_color(ctype)
 
-    f1 = get_font(FB, 52)
-    draw.text((60, 100), "AI DISCOVERY", font=f1, fill=ac)
-    draw.line([(60, 190), (SW - 60, 190)], fill=ac, width=4)
+    for i in range(SH):
+        shade = int(10 + (i / SH) * 15)
+        draw.line(
+            [(0, i), (SW, i)],
+            fill=(shade, shade + 3, shade + 10),
+        )
 
-    f2 = get_font(FB, 68)
-    t_text = wrap(title, 18)
-    draw.multiline_text(
-        (60, 300), t_text,
-        font=f2, fill=(255, 255, 255), spacing=22
-    )
-
-    f3 = get_font(FR, 46)
-    s_text = wrap(summary, 30)
-    draw.multiline_text(
-        (60, 800), s_text,
-        font=f3, fill=(200, 210, 220), spacing=18
-    )
-
-    f4 = get_font(FB, 36)
     draw.rounded_rectangle(
-        [(60, SH - 200), (500, SH - 130)],
-        radius=20, fill=ac
-    )
-    draw.text(
-        (90, SH - 185), source[:20],
-        font=f4, fill=(20, 20, 30)
+        [(50, 160), (SW - 50, SH - 220)],
+        radius=40,
+        fill=(18, 24, 38),
+        outline=(35, 45, 68),
+        width=4,
     )
 
-    f5 = get_font(FR, 32)
-    draw.text(
-        (60, SH - 80),
-        "Follow for more AI updates!",
-        font=f5, fill=(150, 160, 180)
+    draw.rounded_rectangle(
+        [(90, 220), (450, 290)],
+        radius=20,
+        fill=ac,
     )
+    f_badge = get_font(FB, 34)
+    draw.text(
+        (115, 238), badge[:18], font=f_badge, fill=(10, 14, 23)
+    )
+
+    f_title = get_font(FB, 62)
+    t_text = wrap(title, 19)
+    draw.multiline_text(
+        (90, 330),
+        t_text,
+        font=f_title,
+        fill=(255, 255, 255),
+        spacing=20,
+    )
+
+    draw.line(
+        [(90, 600), (SW - 90, 600)],
+        fill=(35, 45, 68),
+        width=3,
+    )
+
+    f_body = get_font(FR, 44)
+    short_script = script[:350] + ("..." if len(script) > 350 else "")
+    s_text = wrap(short_script, 29)
+    draw.multiline_text(
+        (90, 650),
+        s_text,
+        font=f_body,
+        fill=(209, 213, 219),
+        spacing=18,
+    )
+
+    f_src = get_font(FB, 36)
+    draw.rounded_rectangle(
+        [(90, SH - 330), (520, SH - 260)],
+        radius=16,
+        fill=(28, 36, 56),
+    )
+    draw.text(
+        (120, SH - 315),
+        "SOURCE: " + source[:15].upper(),
+        font=f_src,
+        fill=(148, 163, 184),
+    )
+
+    f_cta = get_font(FB, 38)
+    draw.text(
+        (SW // 2 - 200, SH - 140),
+        "⚡ FOLLOW FOR DAILY AI UPDATES",
+        font=f_cta,
+        fill=ac,
+    )
+
     return img
 
 
 def build_shorts_video(
-    title, summary, source, output_path,
-    content_type="news"
+    title,
+    script,
+    source,
+    output_path,
+    badge="🔥 BREAKING",
+    content_type="news",
 ):
     tmp = os.path.dirname(output_path) or "."
     os.makedirs(tmp, exist_ok=True)
 
-    narration = title + ". " + summary
     ap = os.path.join(tmp, "_narration.mp3")
 
-    print("  Generating voice...")
-    make_tts(narration, ap)
+    print("  Generating AI natural voice...")
+    make_tts(script, ap)
     ac = AudioFileClip(ap)
     dur = min(ac.duration, 58.0)
 
-    print("  Building frame...")
-    frame = make_frame(
-        title, summary, source, content_type
-    )
+    print("  Building modern UI card frame...")
+    frame = make_frame(title, script, source, badge, content_type)
     fp = os.path.join(tmp, "_frame.png")
     frame.save(fp)
 
     ic = ImageClip(fp).set_duration(dur)
     bg = ColorClip(
-        size=(SW, SH), color=(15, 20, 35)
+        size=(SW, SH), color=(10, 14, 23)
     ).set_duration(dur)
     video = CompositeVideoClip(
         [bg, ic], size=(SW, SH)
@@ -151,29 +199,33 @@ def build_long_video(items, output_path):
 
     for i, item in enumerate(items[:5]):
         t = item.get("title_short", "AI Update")
-        s = item.get("summary_short", "")
+        s = item.get("script", item.get("summary_short", ""))
         narr = f"Number {i+1}: {t}. {s}"
 
         ap = os.path.join(tmp, f"_a{i}.mp3")
         make_tts(narr, ap)
         ac = AudioFileClip(ap)
-        dur = ac.duration + 1.0
+        dur = ac.duration
 
-        img = Image.new("RGB", (LW, LH), (15, 20, 35))
+        img = Image.new("RGB", (LW, LH), (10, 14, 23))
         draw = ImageDraw.Draw(img)
 
         f1 = get_font(FB, 56)
         draw.multiline_text(
-            (80, 150), wrap(t, 30),
-            font=f1, fill=(255, 255, 255),
-            spacing=18
+            (80, 150),
+            wrap(t, 30),
+            font=f1,
+            fill=(255, 255, 255),
+            spacing=18,
         )
 
         f2 = get_font(FR, 40)
         draw.multiline_text(
-            (80, 450), wrap(s, 50),
-            font=f2, fill=(200, 210, 220),
-            spacing=16
+            (80, 450),
+            wrap(s, 50),
+            font=f2,
+            fill=(209, 213, 219),
+            spacing=16,
         )
 
         fp = os.path.join(tmp, f"_f{i}.png")
@@ -181,7 +233,7 @@ def build_long_video(items, output_path):
 
         ic = ImageClip(fp).set_duration(dur)
         bg = ColorClip(
-            size=(LW, LH), color=(15, 20, 35)
+            size=(LW, LH), color=(10, 14, 23)
         ).set_duration(dur)
         seg = CompositeVideoClip(
             [bg, ic], size=(LW, LH)
