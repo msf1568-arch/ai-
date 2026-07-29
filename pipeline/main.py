@@ -1,5 +1,5 @@
 """
-AI News Pipeline v3
+AI News Pipeline v8 - Prompt Generator
 """
 
 import os
@@ -10,10 +10,7 @@ import traceback
 import requests
 
 from sources import fetch_all_items
-from generate_video import (
-    build_shorts_video,
-    build_long_video,
-)
+from generate_video import build_shorts_video
 
 MKEY = os.environ["MISTRAL_API_KEY"]
 TBOT = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -47,7 +44,7 @@ def rank(items, count=10):
         "For each return: "
         "title_short (under 10 words), "
         "narration (exactly 6 sentences, "
-        "start with hook question, "
+        "start with a hook question, "
         "end with call to action), "
         "link, source, type, score. "
         'Return JSON: {"results": [...]}\n'
@@ -86,87 +83,67 @@ def rank(items, count=10):
             return data
         return []
     except Exception as e:
-        print("Mistral error: " + str(e))
+        print("Mistral err: " + str(e))
         return []
 
 
-def send_tg(vpath, caption):
+def send_tg(text):
     if not TBOT or not TCHAT:
         print("Telegram not configured")
         return
     url = "https://api.telegram.org/bot"
-    url = url + TBOT + "/sendVideo"
+    url = url + TBOT + "/sendMessage"
+    chunks = []
+    while len(text) > 4000:
+        chunks.append(text[:4000])
+        text = text[4000:]
+    chunks.append(text)
+    for chunk in chunks:
+        payload = {
+            "chat_id": TCHAT,
+            "text": chunk,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        }
+        try:
+            r = requests.post(
+                url,
+                data=payload,
+                timeout=30,
+            )
+            if r.status_code == 200:
+                print("  Sent to TG")
+            else:
+                print("  TG err: " + r.text[:100])
+            time.sleep(1)
+        except Exception as e:
+            print("  TG err: " + str(e))
+
+
+def send_tg_doc(path, caption):
+    if not TBOT or not TCHAT:
+        return
+    url = "https://api.telegram.org/bot"
+    url = url + TBOT + "/sendDocument"
     payload = {
         "chat_id": TCHAT,
         "caption": caption[:1024],
-        "parse_mode": "HTML",
     }
     try:
-        with open(vpath, "rb") as f:
-            files = {"video": f}
+        with open(path, "rb") as f:
+            files = {"document": f}
             r = requests.post(
                 url,
                 data=payload,
                 files=files,
-                timeout=300,
+                timeout=60,
             )
         if r.status_code == 200:
-            print("Sent to Telegram!")
-        else:
-            print("TG err: " + r.text[:200])
+            print("  Doc sent to TG")
     except Exception as e:
-        print("TG err: " + str(e))
+        print("  TG err: " + str(e))
 
 
 def main():
     print("=" * 50)
-    print("AI NEWS PIPELINE v3")
-    print("=" * 50)
-    os.makedirs(OUTDIR, exist_ok=True)
-    seen = load_seen()
-    print(str(len(seen)) + " seen")
-
-    print("\nFETCHING...")
-    items = fetch_all_items(seen)
-    if not items:
-        print("No items.")
-        return
-
-    print("\nRANKING...")
-    ranked = rank(items, count=MAX_S)
-    if not ranked:
-        print("No ranked.")
-        return
-    print(str(len(ranked)) + " selected")
-
-    n = len(ranked)
-    print("\nMAKING " + str(n) + " SHORTS...")
-    ok = 0
-    for i, item in enumerate(ranked):
-        t = item.get("title_short", "AI Update")
-        narr = item.get("narration", "")
-        s = item.get("source", "AI")
-        lk = item.get("link", "")
-        ct = item.get("type", "news")
-        vp = os.path.join(OUTDIR, "s" + str(i+1) + ".mp4")
-        print("\n#" + str(i+1) + ": " + t)
-        try:
-            build_shorts_video(t, narr, s, vp, ct)
-            cap = "<b>" + t + "</b>"
-            cap = cap + "\n\n" + narr[:400]
-            cap = cap + "\n\n" + lk
-            send_tg(vp, cap)
-            seen.add(lk)
-            ok += 1
-        except Exception as e:
-            print("ERR: " + str(e))
-            traceback.print_exc()
-        time.sleep(2)
-
-    save_seen(seen)
-    msg = "DONE! " + str(ok) + "/" + str(n)
-    print("\n" + msg)
-
-
-if __name__ == "__main__":
-    main()
+    print("AI NEWS PIPELINE v8 
