@@ -105,7 +105,7 @@ def build_shorts_video(
     print("  Generating voice...")
     make_tts(narration, ap)
     ac = AudioFileClip(ap)
-    dur = min(ac.duration + 1.5, 58.0)
+    dur = min(ac.duration, 58.0)
 
     print("  Building frame...")
     frame = make_frame(
