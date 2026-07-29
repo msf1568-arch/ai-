@@ -1,11 +1,13 @@
 """
-Video Generator v4 - Stable
+Video Generator v6 - Stock Photos
 """
 
 import os
 import re
 import textwrap
-from PIL import Image, ImageDraw, ImageFont
+import requests
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from moviepy.editor import (
     AudioFileClip,
     ImageClip,
@@ -18,6 +20,14 @@ from gtts import gTTS
 SW, SH = 1080, 1920
 FB = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+PEXELS = os.environ.get("PEXELS_API_KEY", "")
+
+QUERIES = {
+    "news": "technology news",
+    "tool": "software coding",
+    "research": "science laboratory",
+    "discovery": "futuristic technology",
+}
 
 
 def gf(path, size):
@@ -33,7 +43,7 @@ def pause(text):
     return t
 
 
-def tts(text, path):
+def make_tts(text, path):
     text = pause(text)
     t = gTTS(text=text, lang="en", slow=False)
     t.save(path)
@@ -44,101 +54,221 @@ def wrap(text, w=28):
     return "\n".join(textwrap.wrap(text, width=w))
 
 
-def colors(t):
-    c = {
-        "news": ((30, 60, 120), (0, 180, 255)),
-        "tool": ((20, 80, 60), (0, 255, 150)),
-        "research": ((80, 40, 20), (255, 120, 50)),
-        "discovery": ((60, 20, 80), (180, 80, 255)),
+def get_stock_photos(query, count=6):
+    if not PEXELS:
+        return []
+    url = "https://api.pexels.com/v1/search"
+    headers = {"Authorization": PEXELS}
+    params = {
+        "query": query,
+        "per_page": count,
+        "orientation": "portrait",
+        "size": "medium",
     }
-    return c.get(t, c["news"])
+    try:
+        r = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=15,
+        )
+        r.raise_for_status()
+        data = r.json()
+        photos = data.get("photos", [])
+        urls = []
+        for p in photos:
+            src = p.get("src", {})
+            u = src.get("large2x", src.get("large", ""))
+            if u:
+                urls.append(u)
+        return urls
+    except Exception as e:
+        print("Pexels err: " + str(e))
+        return []
 
 
-def grad(draw, w, h, c1, c2):
-    for y in range(h):
-        r = c1[0] + (c2[0] - c1[0]) * y // h
-        g = c1[1] + (c2[1] - c1[1]) * y // h
-        b = c1[2] + (c2[2] - c1[2]) * y // h
-        draw.line([(0, y), (w, y)], fill=(r, g, b))
+def download_photo(url):
+    try:
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+        img = Image.open(BytesIO(r.content))
+        img = img.convert("RGB")
+        img = img.resize((SW, SH))
+        return img
+    except Exception as e:
+        print("Download err: " + str(e))
+        return None
 
 
-def dots(draw, w, h, col, n=20):
-    import random
-    random.seed(42)
-    for _ in range(n):
-        x = random.randint(0, w)
-        y = random.randint(0, h)
-        s = random.randint(3, 8)
-        draw.ellipse([(x, y), (x+s, y+s)], fill=col)
+def darken(img, factor=0.4):
+    from PIL import ImageEnhance
+    e = ImageEnhance.Brightness(img)
+    return e.enhance(factor)
 
 
-def frame1(title, src, ct="news"):
-    dk, ac = colors(ct)
-    img = Image.new("RGB", (SW, SH))
+def blur_bg(img, radius=5):
+    return img.filter(ImageFilter.GaussianBlur(radius))
+
+
+COLORS = [
+    (0, 180, 255),
+    (255, 50, 150),
+    (0, 230, 130),
+    (170, 80, 255),
+    (255, 160, 30),
+    (50, 200, 220),
+]
+
+
+def make_solid_bg(idx=0):
+    img = Image.new("RGB", (SW, SH), (15, 20, 35))
     draw = ImageDraw.Draw(img)
-    c1 = dk
-    c2 = (dk[0]//2, dk[1]//2, dk[2]//2)
-    grad(draw, SW, SH, c1, c2)
-    gl = (ac[0]//4, ac[1]//4, ac[2]//4)
-    dots(draw, SW, SH, gl, 25)
-    f0 = gf(FB, 40)
+    for y in range(SH):
+        shade = int(15 + (y / SH) * 25)
+        draw.line(
+            [(0, y), (SW, y)],
+            fill=(shade, shade+5, shade+20)
+        )
+    return img
+
+
+def overlay_intro(img, title, src, ct, ac):
+    draw = ImageDraw.Draw(img)
+    draw.rectangle(
+        [(0, 0), (SW, SH)],
+        fill=(0, 0, 0, 0)
+    )
+    f0 = gf(FB, 42)
     badge = ct.upper()
     bw = len(badge) * 26 + 30
     draw.rounded_rectangle(
-        [(60, 100), (60+bw, 155)],
+        [(60, 250), (60+bw, 310)],
         radius=15, fill=ac
     )
-    draw.text((75, 107), badge, font=f0, fill=(10,10,10))
-    f1 = gf(FB, 50)
-    draw.text((60, 180), "AI DISCOVERY", font=f1, fill=ac)
-    for i in range(5):
-        c = (ac[0]//(i+1), ac[1]//(i+1), ac[2]//(i+1))
-        draw.line([(50, 260+i), (SW-50, 260+i)], fill=c)
-    f2 = gf(FB, 62)
-    draw.multiline_text(
-        (60, 320), wrap(title, 17),
-        font=f2, fill=(255,255,255), spacing=26
+    draw.text(
+        (75, 257), badge,
+        font=f0, fill=(10, 10, 10)
     )
-    f4 = gf(FB, 32)
+    f1 = gf(FB, 52)
+    draw.text(
+        (60, 350), "AI DISCOVERY",
+        font=f1, fill=ac
+    )
+    for i in range(6):
+        c = (ac[0]//(i+1), ac[1]//(i+1), ac[2]//(i+1))
+        draw.line(
+            [(50, 430+i), (SW-50, 430+i)],
+            fill=c, width=2
+        )
+    f2 = gf(FB, 68)
+    draw.multiline_text(
+        (60, 500), wrap(title, 15),
+        font=f2,
+        fill=(255, 255, 255),
+        spacing=28
+    )
+    f3 = gf(FB, 34)
     draw.rounded_rectangle(
-        [(60, SH-240), (420, SH-180)],
+        [(60, SH-280), (420, SH-220)],
         radius=18, fill=ac
     )
-    draw.text((80, SH-230), src[:16], font=f4, fill=(10,10,10))
-    f5 = gf(FR, 28)
     draw.text(
-        (60, SH-120),
+        (80, SH-270), src[:16],
+        font=f3, fill=(10, 10, 10)
+    )
+    f4 = gf(FR, 32)
+    draw.text(
+        (60, SH-150),
         "Follow for daily AI updates!",
-        font=f5, fill=(160,165,180)
+        font=f4, fill=(200, 200, 210)
     )
-    draw.rectangle([(0, SH-8), (SW, SH)], fill=ac)
+    draw.rectangle(
+        [(0, SH-10), (SW, SH)], fill=ac
+    )
     return img
 
 
-def frame2(title, narr, ct="news"):
-    dk, ac = colors(ct)
-    img = Image.new("RGB", (SW, SH))
+def overlay_sentence(img, text, num, total, ac):
     draw = ImageDraw.Draw(img)
-    c1 = dk
-    c2 = (dk[0]//2, dk[1]//2, dk[2]//2)
-    grad(draw, SW, SH, c1, c2)
-    dots(draw, SW, SH, ac, 12)
-    f1 = gf(FB, 44)
-    draw.multiline_text(
-        (60, 180), wrap(title, 20),
-        font=f1, fill=ac, spacing=20
+    f_num = gf(FB, 120)
+    label = str(num) + "/" + str(total)
+    draw.text(
+        (SW-320, 120), label,
+        font=f_num,
+        fill=(ac[0]//2, ac[1]//2, ac[2]//2)
     )
-    for i in range(5):
+    for i in range(6):
         c = (ac[0]//(i+1), ac[1]//(i+1), ac[2]//(i+1))
-        draw.line([(50, 450+i), (SW-50, 450+i)], fill=c)
-    clean = re.sub(r"\.\.\.", "", narr)
-    f2 = gf(FR, 38)
-    draw.multiline_text(
-        (60, 520), wrap(clean, 28),
-        font=f2, fill=(215,220,230), spacing=20
+        draw.line(
+            [(50, 350+i), (SW-50, 350+i)],
+            fill=c, width=2
+        )
+    draw.rectangle(
+        [(0, SH-40), (SW-120, SH-28)],
+        fill=(40, 40, 50)
     )
-    draw.rectangle([(0, SH-8), (SW, SH)], fill=ac)
+    pw = int((num / total) * (SW - 120))
+    draw.rectangle(
+        [(0, SH-40), (pw, SH-28)],
+        fill=ac
+    )
+    f_txt = gf(FB, 52)
+    draw.multiline_text(
+        (60, 500), wrap(text, 22),
+        font=f_txt,
+        fill=(255, 255, 255),
+        spacing=26
+    )
+    bw = 8
+    draw.rectangle([(0, 0), (bw, SH)], fill=ac)
+    draw.rectangle(
+        [(0, SH-10), (SW, SH)], fill=ac
+    )
     return img
+
+
+def overlay_outro(img, title, ac):
+    draw = ImageDraw.Draw(img)
+    f1 = gf(FB, 52)
+    draw.multiline_text(
+        (60, 400), wrap(title, 18),
+        font=f1, fill=ac, spacing=24
+    )
+    for i in range(6):
+        c = (ac[0]//(i+1), ac[1]//(i+1), ac[2]//(i+1))
+        draw.line(
+            [(50, 700+i), (SW-50, 700+i)],
+            fill=c, width=2
+        )
+    f2 = gf(FB, 64)
+    draw.text(
+        (60, 800), "FOLLOW",
+        font=f2, fill=(255, 255, 255)
+    )
+    draw.text(
+        (60, 900), "for daily AI",
+        font=f2, fill=(200, 200, 210)
+    )
+    draw.text(
+        (60, 1000), "updates!",
+        font=f2, fill=ac
+    )
+    draw.rectangle(
+        [(0, SH-10), (SW, SH)], fill=ac
+    )
+    return img
+
+
+def split_sentences(text):
+    parts = re.split(r"(?<=[.!?])\s+", text)
+    result = []
+    for p in parts:
+        p = p.strip()
+        if len(p) > 10:
+            result.append(p)
+    if not result:
+        result = [text]
+    return result
 
 
 def build_shorts_video(title, narr, src, out, ct="news"):
@@ -146,25 +276,60 @@ def build_shorts_video(title, narr, src, out, ct="news"):
     os.makedirs(tmp, exist_ok=True)
     ap = os.path.join(tmp, "_n.mp3")
     print("  Making voice...")
-    tts(narr, ap)
-    ac = AudioFileClip(ap)
-    dur = min(ac.duration, 59.0)
-    half = dur / 2.0
-    print("  Making frames...")
-    f1 = frame1(title, src, ct)
-    p1 = os.path.join(tmp, "_f1.png")
-    f1.save(p1)
-    f2 = frame2(title, narr, ct)
-    p2 = os.path.join(tmp, "_f2.png")
-    f2.save(p2)
-    c1 = ImageClip(p1).set_duration(half)
-    c2 = ImageClip(p2).set_duration(dur - half)
-    c2 = c2.set_start(half)
-    bg = ColorClip(
+    make_tts(narr, ap)
+    ac_clip = AudioFileClip(ap)
+    dur = min(ac_clip.duration, 59.0)
+    sentences = split_sentences(narr)
+    n_scenes = len(sentences) + 2
+    scene_dur = dur / n_scenes
+    q = QUERIES.get(ct, "technology")
+    print("  Fetching " + str(n_scenes) + " photos...")
+    urls = get_stock_photos(q, n_scenes)
+    ci = hash(title) % len(COLORS)
+    accent = COLORS[ci]
+    clips = []
+    paths = []
+    for s_idx in range(n_scenes):
+        bg = None
+        if s_idx < len(urls):
+            bg = download_photo(urls[s_idx])
+        if bg is None:
+            bg = make_solid_bg(s_idx)
+        bg = darken(bg, 0.35)
+        bg = blur_bg(bg, 3)
+        if s_idx == 0:
+            bg = overlay_intro(
+                bg, title, src, ct, accent
+            )
+        elif s_idx == n_scenes - 1:
+            bg = overlay_outro(bg, title, accent)
+        else:
+            si = s_idx - 1
+            if si < len(sentences):
+                txt = sentences[si]
+            else:
+                txt = title
+            bg = overlay_sentence(
+                bg, txt, s_idx,
+                n_scenes - 2, accent
+            )
+        fp = os.path.join(
+            tmp, "_sc" + str(s_idx) + ".png"
+        )
+        bg.save(fp)
+        paths.append(fp)
+        start = scene_dur * s_idx
+        c = ImageClip(fp).set_duration(scene_dur)
+        c = c.set_start(start)
+        clips.append(c)
+    bg_clip = ColorClip(
         size=(SW, SH), color=(10, 10, 20)
     ).set_duration(dur)
-    video = CompositeVideoClip([bg, c1, c2], size=(SW, SH))
-    video = video.set_audio(ac.subclip(0, dur))
+    all_c = [bg_clip] + clips
+    video = CompositeVideoClip(all_c, size=(SW, SH))
+    video = video.set_audio(
+        ac_clip.subclip(0, dur)
+    )
     print("  Rendering...")
     video.write_videofile(
         out,
@@ -175,7 +340,7 @@ def build_shorts_video(title, narr, src, out, ct="news"):
         preset="ultrafast",
         logger=None,
     )
-    for f in [ap, p1, p2]:
+    for f in paths + [ap]:
         try:
             os.remove(f)
         except Exception:
@@ -194,17 +359,23 @@ def build_long_video(items, out):
         ct = item.get("type", "news")
         txt = "Number " + str(i+1) + ". " + t + ". " + n
         ap = os.path.join(tmp, "_a" + str(i) + ".mp3")
-        tts(txt, ap)
+        make_tts(txt, ap)
         ac = AudioFileClip(ap)
         dur = ac.duration
-        img = frame2(t, n, ct)
+        bg = make_solid_bg(i)
+        ci = i % len(COLORS)
+        bg = overlay_sentence(
+            bg, n, i+1, 5, COLORS[ci]
+        )
         fp = os.path.join(tmp, "_f" + str(i) + ".png")
-        img.save(fp)
+        bg.save(fp)
         ic = ImageClip(fp).set_duration(dur)
-        bg = ColorClip(
+        bgc = ColorClip(
             size=(1920, 1080), color=(15, 20, 35)
         ).set_duration(dur)
-        seg = CompositeVideoClip([bg, ic], size=(1920, 1080))
+        seg = CompositeVideoClip(
+            [bgc, ic], size=(1920, 1080)
+        )
         seg = seg.set_audio(ac)
         clips.append(seg)
         for f in [ap, fp]:
@@ -212,7 +383,9 @@ def build_long_video(items, out):
                 os.remove(f)
             except Exception:
                 pass
-    final = concatenate_videoclips(clips, method="compose")
+    final = concatenate_videoclips(
+        clips, method="compose"
+    )
     final.write_videofile(
         out,
         fps=24,
