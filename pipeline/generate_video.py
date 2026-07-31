@@ -23,6 +23,7 @@ def call_ai(prompt):
         "messages": [
             {"role": "user", "content": prompt}
         ],
+        "max_tokens": 8000,
     }
     try:
         r = requests.post(
@@ -37,7 +38,9 @@ def call_ai(prompt):
         return ""
 
 
-PROMPT = """You are an elite YouTube Shorts director, viral strategist, behavioral psychologist, and Google Flow/Veo prompt engineer.
+PROMPT = """You are an elite YouTube Shorts director, viral strategist, behavioral psychologist, and Google Flow/Veo prompt engineer specializing in AI/tech news for GLOBAL ENGLISH-SPEAKING audiences.
+
+You transform complex AI/tech developments into EXCITING, CLEAR, TRUSTWORTHY short-form videos that general viewers love AND tech-savvy viewers respect.
 
 === INPUTS ===
 TOPIC: {title}
@@ -45,97 +48,94 @@ FULL STORY: {narration}
 SOURCE: {source}
 CATEGORY: {content_type}
 
-=== MISSION ===
-Create a COMPLETE viral video package for YouTube Shorts using Google Flow/Veo with built-in voice synthesis.
+=== YOUR MISSION ===
+Create a COMPLETE, production-ready, fact-locked viral video package for:
+- YouTube Shorts
+- Instagram Reels  
+- TikTok
+Generated via Google Flow/Veo
 
-=== CRITICAL RULES ===
+Optimize for maximum:
+- retention (watch time + rewatch)
+- engagement (comments + shares)
+- subscriptions
+- long-term trust and brand value
 
-**CLIP COUNT: NO LIMIT**
-Decide the EXACT number of clips needed to tell the COMPLETE story.
-- Simple news: 4-6 clips
-- Medium story: 7-10 clips
-- Complex/detailed story: 11-15 clips
-- Breaking news with many facts: up to 20 clips
-Choose based on how much information needs to be communicated clearly.
+=== THE GOLDEN RULE: 80/20 PRINCIPLE ===
 
-**ONE PROMPT PER CLIP**
-Give exactly ONE video prompt per clip. No alternatives.
+Think of content creation as:
+**80% ENERGY on making TRUE FACTS feel urgent and relevant**
+**20% ENERGY on dramatic framing, pacing, and curiosity**
 
-**GOOGLE FLOW VOICE**
-Include voice text in each prompt. Google Flow will synthesize speech.
+CRITICAL: The "20% drama" applies ONLY to:
+- How you frame the stakes
+- Pacing and contrast
+- Emotional relevance  
+- Curiosity structure
+- Visual storytelling
+- Tension and payoff timing
 
-**ONE THUMBNAIL**
-Create exactly ONE thumbnail prompt.
+The "20% drama" does NOT apply to:
+- The facts themselves
+- Numbers, dates, capabilities
+- Comparisons or benchmarks
+- Outcomes or predictions
 
-**SOURCE IN CAPTION**
-Always credit the source in caption.
+NEVER:
+- Invent details not in FULL STORY
+- Turn uncertainty into certainty
+- Exaggerate capabilities
+- State reported claims as confirmed facts
 
-=== THE 80/20 RULE ===
-80% energy: Make TRUE FACTS feel urgent and relevant
-20% energy: Dramatic framing, pacing, curiosity
+ALWAYS:
+- Use curiosity framing for unknowns
+- Attribute uncertain claims
+- Mark missing details clearly
 
-NEVER invent details. NEVER exaggerate. 
-Use curiosity framing for unknowns.
-Attribute uncertain claims.
+=== VIRAL DECISION RULE ===
 
-=== DUAL AUDIENCE ===
+When multiple truthful framing options exist, ALWAYS choose the version with:
+- Strongest emotional contrast  
+- Highest curiosity trigger  
+- Clearest personal stakes
+- Best stop-scroll potential  
+- Most comment-worthy tension  
+
+=== DUAL AUDIENCE STRATEGY ===
 
 **GENERAL VIEWERS (60%)**
-- Simple language
-- Emotional clarity  
+- Know little about AI
+- Need simple language
 - Care about: money, jobs, time, privacy
 
-**AI-AWARE VIEWERS (40%)**
+**AI-AWARE VIEWERS (40%)**  
+- Understand tech context
 - Want real significance
-- Appreciate smart comparisons
-
-Every clip must work for BOTH audiences.
-
-=== VIRAL PSYCHOLOGY ===
-
-Use these triggers:
-- Surprise (unexpected reveal)
-- Curiosity (open loops)
-- FOMO (fear of missing out)
-- Status (who wins/loses)
-- Urgency (happening now)
-- Relatability (affects YOU)
-
-=== CLIP STRUCTURE ===
-
-**FIRST CLIP: HOOK**
-- Pattern interrupt in first 1.5 seconds
-- Emotional stakes established
-- Stop the scroll
-
-**SECOND CLIP: CONTEXT**
-- Set the scene
-- Plant the OPEN LOOP (unanswered question)
-
-**MIDDLE CLIPS: STORY**
-- ONE new fact per clip
-- Build tension
-- Each clip advances narrative
-- Include ALL important details from the story
-
-**70% MARK: WOW MOMENT**
-- Twist or reversal
-- Biggest revelation
-
-**FINAL CLIP: PAYOFF**
-- Resolve the open loop
-- Visual callback to clip 1
-- Clear CTA
-- Loop trigger
 
 === LANGUAGE RULES ===
 
-All in ENGLISH.
+All output in ENGLISH.
 Voiceover: Conversational, MAX 14 words per line.
 Text overlay: MAX 4 words.
-No jargon - use analogies.
 
-=== GOOGLE FLOW PROMPT FORMAT ===
+=== CONTENT STRUCTURE ===
+
+**CLIP COUNT: NO LIMIT - decide based on story complexity**
+- Simple news: 4-6 clips
+- Medium story: 7-10 clips
+- Complex story: 11-15 clips
+- Breaking news with many facts: up to 20 clips
+
+**EACH CLIP DURATION: exactly 7 seconds**
+
+**STRUCTURE:**
+- Clip 1: HOOK (pattern interrupt + emotional stakes)
+- Clip 2: CONTEXT (set scene + plant open loop)
+- Middle clips: BUILD (one new fact per clip)
+- 70% mark: WOW moment (twist/reversal)
+- Final clip: PAYOFF (resolve loop + CTA + visual callback to clip 1)
+
+=== GOOGLE FLOW REQUIREMENTS ===
 
 Each video_prompt MUST include:
 - Subject (who/what)
@@ -145,9 +145,9 @@ Each video_prompt MUST include:
 - Camera movement (push in/pull out/static/pan)
 - Lighting (mood, direction, color)
 - Emotion/mood
-- VOICE: [exact words to speak]
+- VOICE: [exact words to speak - max 14 words]
 - Format: vertical 9:16, 1080x1920, cinematic
-- Avoid: text, logos, blur, distorted faces, broken hands
+- Negative: text, logos, blur, distorted faces, broken hands
 
 === FACT SAFETY ===
 
@@ -197,13 +197,13 @@ Return ONLY valid JSON:
   "clips": [
     {{
       "clip": 1,
-      "time": "0:00-0:04",
-      "duration": "4s",
+      "time": "0:00-0:07",
+      "duration": "7s",
       "role": "HOOK/CONTEXT/BUILD/ESCALATE/PAYOFF",
       "emotional_goal": "what viewer feels",
       "info_goal": "what viewer learns",
       "claim_status": "confirmed/reported/unknown",
-      "video_prompt": "Complete prompt: [subject] in [environment], [action], [camera angle], [movement], [lighting], [mood], vertical 9:16, cinematic. VOICE: [exact words max 14]. Avoid: text, logos, blur, distorted faces, broken hands, extra fingers.",
+      "video_prompt": "Complete prompt: [subject] in [environment], [action], [camera angle], [movement], [lighting], [mood], vertical 9:16, cinematic. VOICE: [exact words max 14]. Negative: text, logos, blur, distorted faces, broken hands, extra fingers.",
       "text_overlay": "MAX 4 WORDS",
       "transition": "cut/zoom in/zoom out/whip pan/match cut",
       "sfx": "sound effect suggestion"
@@ -453,7 +453,7 @@ def fmt(data, title, src):
     else:
         for c in clips:
             vp = c.get("video_prompt", "")
-            vm = re.search(r"VOICE:\s*(.+?)(?:Avoid|$)", vp, re.IGNORECASE)
+            vm = re.search(r"VOICE:\s*(.+?)(?:Negative|$)", vp, re.IGNORECASE)
             if vm:
                 lines.append(vm.group(1).strip())
     lines.append("")
