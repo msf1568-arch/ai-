@@ -1,5 +1,5 @@
 """
-Prompt Generator v10 - Pro Viral
+Prompt Generator v12 - Full Pro
 """
 
 import os
@@ -27,7 +27,7 @@ def call_ai(prompt):
     try:
         r = requests.post(
             API, headers=headers,
-            json=body, timeout=180,
+            json=body, timeout=200,
         )
         r.raise_for_status()
         txt = r.json()
@@ -37,9 +37,7 @@ def call_ai(prompt):
         return ""
 
 
-PROMPT = """You are an elite YouTube Shorts director, viral strategist, behavioral psychologist, and Google Flow/Veo prompt engineer specializing in AI/tech news for GLOBAL ENGLISH-SPEAKING audiences.
-
-You transform complex AI/tech developments into EXCITING, CLEAR, TRUSTWORTHY short-form videos that general viewers love AND tech-savvy viewers respect.
+PROMPT = """You are an elite YouTube Shorts director, viral strategist, behavioral psychologist, and Google Flow/Veo prompt engineer.
 
 === INPUTS ===
 TOPIC: {title}
@@ -47,204 +45,210 @@ FULL STORY: {narration}
 SOURCE: {source}
 CATEGORY: {content_type}
 
-=== YOUR MISSION ===
-Create a COMPLETE, production-ready, fact-locked viral video package for:
-- YouTube Shorts
-- Instagram Reels  
-- TikTok
-Generated via Google Flow/Veo
+=== MISSION ===
+Create a COMPLETE viral video package for YouTube Shorts using Google Flow/Veo with built-in voice synthesis.
 
-Optimize for maximum:
-- retention (watch time + rewatch)
-- engagement (comments + shares)
-- subscriptions
-- long-term trust and brand value
+=== CRITICAL RULES ===
 
-=== THE GOLDEN RULE: 80/20 PRINCIPLE ===
+**CLIP COUNT: NO LIMIT**
+Decide the EXACT number of clips needed to tell the COMPLETE story.
+- Simple news: 4-6 clips
+- Medium story: 7-10 clips
+- Complex/detailed story: 11-15 clips
+- Breaking news with many facts: up to 20 clips
+Choose based on how much information needs to be communicated clearly.
 
-Think of content creation as:
-**80% ENERGY on making TRUE FACTS feel urgent and relevant**
-**20% ENERGY on dramatic framing, pacing, and curiosity**
+**ONE PROMPT PER CLIP**
+Give exactly ONE video prompt per clip. No alternatives.
 
-CRITICAL: The "20% drama" applies ONLY to:
-- How you frame the stakes
-- Pacing and contrast
-- Emotional relevance  
-- Curiosity structure
-- Visual storytelling
-- Tension and payoff timing
+**GOOGLE FLOW VOICE**
+Include voice text in each prompt. Google Flow will synthesize speech.
 
-The "20% drama" does NOT apply to:
-- The facts themselves
-- Numbers, dates, capabilities
-- Comparisons or benchmarks
-- Outcomes or predictions
+**ONE THUMBNAIL**
+Create exactly ONE thumbnail prompt.
 
-NEVER:
-- Invent details not in FULL STORY
-- Turn uncertainty into certainty
-- Exaggerate capabilities
-- State reported claims as confirmed facts
+**SOURCE IN CAPTION**
+Always credit the source in caption.
 
-ALWAYS:
-- Use curiosity framing for unknowns
-- Attribute uncertain claims
-- Mark missing details clearly
+=== THE 80/20 RULE ===
+80% energy: Make TRUE FACTS feel urgent and relevant
+20% energy: Dramatic framing, pacing, curiosity
 
-=== VIRAL DECISION RULE ===
+NEVER invent details. NEVER exaggerate. 
+Use curiosity framing for unknowns.
+Attribute uncertain claims.
 
-When multiple truthful framing options exist, ALWAYS choose the version with:
-- Strongest emotional contrast  
-- Highest curiosity trigger  
-- Clearest personal stakes
-- Best stop-scroll potential  
-- Most comment-worthy tension  
-
-=== DUAL AUDIENCE STRATEGY ===
+=== DUAL AUDIENCE ===
 
 **GENERAL VIEWERS (60%)**
-- Know little about AI
-- Need simple language
+- Simple language
+- Emotional clarity  
 - Care about: money, jobs, time, privacy
 
-**AI-AWARE VIEWERS (40%)**  
-- Understand tech context
+**AI-AWARE VIEWERS (40%)**
 - Want real significance
+- Appreciate smart comparisons
+
+Every clip must work for BOTH audiences.
+
+=== VIRAL PSYCHOLOGY ===
+
+Use these triggers:
+- Surprise (unexpected reveal)
+- Curiosity (open loops)
+- FOMO (fear of missing out)
+- Status (who wins/loses)
+- Urgency (happening now)
+- Relatability (affects YOU)
+
+=== CLIP STRUCTURE ===
+
+**FIRST CLIP: HOOK**
+- Pattern interrupt in first 1.5 seconds
+- Emotional stakes established
+- Stop the scroll
+
+**SECOND CLIP: CONTEXT**
+- Set the scene
+- Plant the OPEN LOOP (unanswered question)
+
+**MIDDLE CLIPS: STORY**
+- ONE new fact per clip
+- Build tension
+- Each clip advances narrative
+- Include ALL important details from the story
+
+**70% MARK: WOW MOMENT**
+- Twist or reversal
+- Biggest revelation
+
+**FINAL CLIP: PAYOFF**
+- Resolve the open loop
+- Visual callback to clip 1
+- Clear CTA
+- Loop trigger
 
 === LANGUAGE RULES ===
 
-All output in ENGLISH.
-Voiceover: Conversational, punchy, MAX 14 words per line.
+All in ENGLISH.
+Voiceover: Conversational, MAX 14 words per line.
 Text overlay: MAX 4 words.
+No jargon - use analogies.
 
-=== CONTENT STRUCTURE ===
+=== GOOGLE FLOW PROMPT FORMAT ===
 
-CLIP COUNT: 6-10 clips based on story complexity
-CLIP LENGTH: 3-6 seconds each  
-TOTAL DURATION: 36-54 seconds  
+Each video_prompt MUST include:
+- Subject (who/what)
+- Environment (where)
+- Action (doing what)
+- Camera angle (low/high/eye-level)
+- Camera movement (push in/pull out/static/pan)
+- Lighting (mood, direction, color)
+- Emotion/mood
+- VOICE: [exact words to speak]
+- Format: vertical 9:16, 1080x1920, cinematic
+- Avoid: text, logos, blur, distorted faces, broken hands
 
-Clip 1: HOOK (pattern interrupt + emotional stakes)
-Clip 2: CONTEXT (set scene + plant open loop)
-Clips 3-5: STORY BUILD (one new fact per clip)
-Clips 6-8: ESCALATION (twist/reversal at 70%)
-Final Clip: PAYOFF (resolve loop + CTA + visual callback)
+=== FACT SAFETY ===
 
-=== GOOGLE FLOW REQUIREMENTS ===
-
-Every video_prompt must include:
-- Subject, Environment, Action
-- Camera angle and movement
-- Lighting and mood
-- Format: vertical 9:16, 1080x1920, 30fps
-
-AVOID: readable text, logos, blurry frames, distorted faces, broken hands
+Before writing, categorize:
+- CONFIRMED: Can state as fact
+- REPORTED: Use "according to...", "reports suggest..."
+- UNKNOWN: Use "it's unclear...", "the exact number..."
 
 === OUTPUT FORMAT ===
 
 Return ONLY valid JSON:
 
 {{
-  "story_status": "confirmed/reported/mixed",
-  
-  "audience_strategy": {{
-    "general_viewers": "what they feel and why they care",
-    "ai_aware_viewers": "what insight they appreciate"
+  "story_analysis": {{
+    "complexity": "simple/medium/complex",
+    "key_facts_count": 0,
+    "recommended_clips": 0,
+    "reasoning": "why this many clips needed"
   }},
   
   "viral_angle": "strongest dramatic angle",
-  "mental_model": "ONE memorable idea",
-  "visual_metaphor": "universal visual concept",
+  "mental_model": "ONE memorable idea viewers remember",
+  "open_loop": "question planted early, answered at end",
   
   "why_care": [
-    "practical impact 1",
-    "practical impact 2",
-    "practical impact 3"
+    "impact on money/jobs",
+    "impact on daily life", 
+    "impact on future"
   ],
   
   "fact_check": {{
-    "confirmed": ["fact 1", "fact 2"],
-    "reported": ["claim 1"],
+    "confirmed": ["verified fact 1", "verified fact 2"],
+    "reported": ["unverified claim 1"],
     "unknown": ["missing detail 1"]
   }},
   
-  "open_loop": "unanswered question resolved at end",
-  
   "style_guide": {{
-    "format": "9:16 vertical, 1080x1920, 30fps",
-    "visual_style": "premium cinematic realism",
-    "color_palette": "3-4 colors",
-    "lighting": "mood and approach",
-    "motion_style": "camera philosophy"
+    "visual_style": "cinematic/documentary/dramatic",
+    "color_palette": "main colors used",
+    "mood": "overall emotional tone",
+    "pacing": "fast/medium/slow"
   }},
   
   "total_duration": "Xs",
-  "clip_count": 6,
+  "clip_count": 0,
   
   "clips": [
     {{
       "clip": 1,
       "time": "0:00-0:04",
       "duration": "4s",
-      "role": "HOOK",
+      "role": "HOOK/CONTEXT/BUILD/ESCALATE/PAYOFF",
       "emotional_goal": "what viewer feels",
       "info_goal": "what viewer learns",
-      "claim_status": "confirmed",
-      "video_prompt": "Complete prompt with subject, environment, action, camera, lighting, mood, 9:16 vertical",
-      "video_prompt_alt": "Alternative approach",
-      "negative_prompt": "text, logos, blur, distorted faces, broken hands",
+      "claim_status": "confirmed/reported/unknown",
+      "video_prompt": "Complete prompt: [subject] in [environment], [action], [camera angle], [movement], [lighting], [mood], vertical 9:16, cinematic. VOICE: [exact words max 14]. Avoid: text, logos, blur, distorted faces, broken hands, extra fingers.",
       "text_overlay": "MAX 4 WORDS",
-      "voiceover": "Max 14 words, conversational",
-      "transition": "match cut / whip pan / zoom",
-      "sfx": "sound effect"
+      "transition": "cut/zoom in/zoom out/whip pan/match cut",
+      "sfx": "sound effect suggestion"
     }}
   ],
   
-  "thumbnails": [
-    {{
-      "concept": 1,
-      "prompt": "Emotion + contrast, no text, bold, 9:16",
-      "text_overlay": "2-4 WORDS",
-      "trigger": "curiosity/shock/FOMO"
-    }},
-    {{
-      "concept": 2,
-      "prompt": "Alternative thumbnail",
-      "text_overlay": "2-4 WORDS",
-      "trigger": "different trigger"
-    }}
+  "thumbnail": {{
+    "prompt": "Detailed prompt: [subject with clear emotion], [composition using rule of thirds], [dramatic lighting], [bold colors], [simple background], no text in image, 16:9 horizontal, high contrast, optimized for mobile CTR",
+    "text_to_add": "2-4 WORDS to overlay",
+    "emotion": "shock/curiosity/excitement"
+  }},
+  
+  "youtube": {{
+    "title": "Catchy title under 60 chars with curiosity hook",
+    "caption": "Hook sentence grabbing attention. 2-3 sentences telling the story simply. Source: {source}. Follow for daily AI news you can trust! Emojis.",
+    "hashtags": "#shorts #ai #technews #viral #artificialintelligence"
+  }},
+  
+  "seo_keywords": [
+    "search phrase 1",
+    "search phrase 2",
+    "search phrase 3"
   ],
-  
-  "titles": [
-    "Primary title under 60 chars",
-    "Alternative title 2",
-    "Alternative title 3"
-  ],
-  
-  "caption": "Hook. Summary. Source credit. Subscribe CTA. Emojis.",
-  
-  "hashtags": "#AI #TechNews #Shorts",
-  
-  "seo_keywords": ["search phrase 1", "search phrase 2"],
   
   "growth": {{
     "comment_trigger": "specific opinion question",
     "subscribe_reason": "concrete value promise",
-    "share_trigger": "why someone would share"
+    "share_trigger": "why someone sends to friend"
   }},
   
   "retention_hooks": [
-    "0:00 pattern interrupt",
-    "0:05 open loop",
-    "70% wow moment",
-    "end payoff"
+    "0:01 - pattern interrupt description",
+    "clip 2 - open loop description", 
+    "70% - wow moment description",
+    "end - payoff description"
   ],
   
   "posting": {{
-    "best_time": "day/time",
-    "promo_tactic": "strategy"
+    "best_time": "day and time",
+    "reason": "why this time"
   }},
   
-  "cta_spoken": "Exact spoken CTA"
+  "voiceover_full": "Complete script combining all VOICE texts in order",
+  
+  "cta_spoken": "Exact final CTA spoken naturally"
 }}"""
 
 
@@ -255,7 +259,7 @@ def gen(title, narr, src, ct):
         source=src,
         content_type=ct,
     )
-    print("  Generating pro prompts...")
+    print("  Generating prompts...")
     resp = call_ai(p)
     cleaned = re.sub(r"```json|```", "", resp)
     cleaned = cleaned.strip()
@@ -272,101 +276,140 @@ def gen(title, narr, src, ct):
         return {"raw": resp}
 
 
-def fmt(data, title, link):
+def fmt(data, title, src):
     lines = []
     lines.append("=" * 60)
-    lines.append("VIDEO PACKAGE")
+    lines.append("VIDEO PRODUCTION PACKAGE")
     lines.append("=" * 60)
     lines.append("")
     lines.append("TOPIC: " + title)
-    lines.append("LINK: " + link)
+    lines.append("SOURCE: " + src)
     lines.append("")
-    ss = data.get("story_status", "")
-    if ss:
-        lines.append("STATUS: " + ss)
+    sa = data.get("story_analysis", {})
+    if sa:
+        lines.append("STORY ANALYSIS:")
+        lines.append("  Complexity: " + sa.get("complexity", ""))
+        lines.append("  Key Facts: " + str(sa.get("key_facts_count", "")))
+        lines.append("  Clips Needed: " + str(sa.get("recommended_clips", "")))
+        lines.append("  Reason: " + sa.get("reasoning", ""))
+        lines.append("")
     va = data.get("viral_angle", "")
     if va:
         lines.append("VIRAL ANGLE: " + va)
     mm = data.get("mental_model", "")
     if mm:
-        lines.append("MENTAL MODEL: " + mm)
-    vm = data.get("visual_metaphor", "")
-    if vm:
-        lines.append("VISUAL METAPHOR: " + vm)
-    lines.append("")
-    wc = data.get("why_care", [])
-    if wc:
-        lines.append("WHY CARE:")
-        for w in wc:
-            lines.append("  - " + w)
-        lines.append("")
+        lines.append("MEMORABLE IDEA: " + mm)
     ol = data.get("open_loop", "")
     if ol:
         lines.append("OPEN LOOP: " + ol)
+    lines.append("")
+    wc = data.get("why_care", [])
+    if wc:
+        lines.append("WHY VIEWERS CARE:")
+        for w in wc:
+            lines.append("  - " + w)
         lines.append("")
-    titles = data.get("titles", [])
-    if titles:
-        lines.append("TITLES:")
-        for t in titles:
-            lines.append("  " + t)
+    fc = data.get("fact_check", {})
+    if fc:
+        lines.append("FACT CHECK:")
+        conf = fc.get("confirmed", [])
+        if conf:
+            lines.append("  Confirmed:")
+            for c in conf:
+                lines.append("    * " + c)
+        rep = fc.get("reported", [])
+        if rep:
+            lines.append("  Reported (not verified):")
+            for r in rep:
+                lines.append("    ? " + r)
+        unk = fc.get("unknown", [])
+        if unk:
+            lines.append("  Unknown:")
+            for u in unk:
+                lines.append("    - " + u)
         lines.append("")
+    sg = data.get("style_guide", {})
+    if sg:
+        lines.append("STYLE GUIDE:")
+        lines.append("  Visual: " + sg.get("visual_style", ""))
+        lines.append("  Colors: " + sg.get("color_palette", ""))
+        lines.append("  Mood: " + sg.get("mood", ""))
+        lines.append("  Pacing: " + sg.get("pacing", ""))
+        lines.append("")
+    dur = data.get("total_duration", "")
+    cn = data.get("clip_count", "")
+    lines.append("TOTAL DURATION: " + str(dur))
+    lines.append("TOTAL CLIPS: " + str(cn))
+    lines.append("")
     lines.append("=" * 60)
-    lines.append("CLIPS")
+    lines.append("VIDEO PROMPTS FOR GOOGLE FLOW")
     lines.append("=" * 60)
     clips = data.get("clips", [])
     for c in clips:
         lines.append("")
-        cn = c.get("clip", "?")
-        lines.append("--- CLIP " + str(cn) + " ---")
+        n = c.get("clip", "?")
+        lines.append("-" * 50)
+        lines.append("CLIP " + str(n) + " | " + c.get("role", ""))
+        lines.append("-" * 50)
         lines.append("TIME: " + c.get("time", ""))
-        lines.append("ROLE: " + c.get("role", ""))
+        lines.append("DURATION: " + c.get("duration", ""))
         eg = c.get("emotional_goal", "")
         if eg:
             lines.append("EMOTION: " + eg)
         ig = c.get("info_goal", "")
         if ig:
             lines.append("INFO: " + ig)
+        cs = c.get("claim_status", "")
+        if cs:
+            lines.append("STATUS: " + cs)
         lines.append("")
-        lines.append("VIDEO PROMPT:")
+        lines.append(">>> COPY THIS TO GOOGLE FLOW:")
+        lines.append("")
         lines.append(c.get("video_prompt", ""))
         lines.append("")
-        alt = c.get("video_prompt_alt", "")
-        if alt:
-            lines.append("ALT PROMPT:")
-            lines.append(alt)
-            lines.append("")
-        neg = c.get("negative_prompt", "")
-        if neg:
-            lines.append("NEGATIVE: " + neg)
+        lines.append("<<<")
         lines.append("")
-        lines.append("TEXT: " + c.get("text_overlay", ""))
-        lines.append("VOICE: " + c.get("voiceover", ""))
-        lines.append("TRANSITION: " + c.get("transition", ""))
+        to = c.get("text_overlay", "")
+        if to:
+            lines.append("TEXT OVERLAY: " + to)
+        tr = c.get("transition", "")
+        if tr:
+            lines.append("TRANSITION: " + tr)
         sfx = c.get("sfx", "")
         if sfx:
             lines.append("SFX: " + sfx)
     lines.append("")
     lines.append("=" * 60)
-    lines.append("THUMBNAILS")
+    lines.append("THUMBNAIL")
     lines.append("=" * 60)
-    thumbs = data.get("thumbnails", [])
-    for th in thumbs:
-        lines.append("")
-        cn = th.get("concept", "?")
-        lines.append("--- CONCEPT " + str(cn) + " ---")
-        lines.append("PROMPT:")
-        lines.append(th.get("prompt", ""))
-        lines.append("TEXT: " + th.get("text_overlay", ""))
-        lines.append("TRIGGER: " + th.get("trigger", ""))
+    th = data.get("thumbnail", {})
+    lines.append("")
+    lines.append(">>> COPY THIS TO IMAGE AI:")
+    lines.append("")
+    lines.append(th.get("prompt", ""))
+    lines.append("")
+    lines.append("<<<")
+    lines.append("")
+    tta = th.get("text_to_add", "")
+    if tta:
+        lines.append("ADD THIS TEXT: " + tta)
+    em = th.get("emotion", "")
+    if em:
+        lines.append("EMOTION: " + em)
     lines.append("")
     lines.append("=" * 60)
-    lines.append("CAPTION")
+    lines.append("YOUTUBE DETAILS")
     lines.append("=" * 60)
+    yt = data.get("youtube", {})
     lines.append("")
-    lines.append(data.get("caption", ""))
+    lines.append("TITLE:")
+    lines.append(yt.get("title", ""))
+    lines.append("")
+    lines.append("CAPTION:")
+    lines.append(yt.get("caption", ""))
     lines.append("")
     lines.append("HASHTAGS:")
-    lines.append(data.get("hashtags", ""))
+    lines.append(yt.get("hashtags", ""))
     lines.append("")
     seo = data.get("seo_keywords", [])
     if seo:
@@ -375,46 +418,48 @@ def fmt(data, title, link):
             lines.append("  " + s)
         lines.append("")
     lines.append("=" * 60)
-    lines.append("GROWTH")
+    lines.append("GROWTH STRATEGY")
     lines.append("=" * 60)
     gr = data.get("growth", {})
     lines.append("")
-    ct = gr.get("comment_trigger", "")
-    if ct:
-        lines.append("COMMENT TRIGGER: " + ct)
+    ct_q = gr.get("comment_trigger", "")
+    if ct_q:
+        lines.append("ASK: " + ct_q)
     sr = gr.get("subscribe_reason", "")
     if sr:
-        lines.append("SUBSCRIBE REASON: " + sr)
-    st = gr.get("share_trigger", "")
-    if st:
-        lines.append("SHARE TRIGGER: " + st)
-    lines.append("")
-    cta = data.get("cta_spoken", "")
-    if cta:
-        lines.append("CTA SPOKEN: " + cta)
-    lines.append("")
-    lines.append("=" * 60)
-    lines.append("VOICEOVER SCRIPT")
-    lines.append("=" * 60)
-    lines.append("")
-    for c in clips:
-        vo = c.get("voiceover", "")
-        if vo:
-            lines.append(vo)
+        lines.append("WHY SUBSCRIBE: " + sr)
+    sht = gr.get("share_trigger", "")
+    if sht:
+        lines.append("WHY SHARE: " + sht)
     lines.append("")
     rh = data.get("retention_hooks", [])
     if rh:
         lines.append("RETENTION HOOKS:")
         for h in rh:
             lines.append("  " + h)
-    lines.append("")
+        lines.append("")
     po = data.get("posting", {})
-    bt = po.get("best_time", "")
-    if bt:
-        lines.append("BEST TIME: " + bt)
-    pt = po.get("promo_tactic", "")
-    if pt:
-        lines.append("PROMO: " + pt)
+    if po:
+        lines.append("BEST TIME: " + po.get("best_time", ""))
+        lines.append("REASON: " + po.get("reason", ""))
+        lines.append("")
+    lines.append("=" * 60)
+    lines.append("COMPLETE VOICEOVER SCRIPT")
+    lines.append("=" * 60)
+    lines.append("")
+    vf = data.get("voiceover_full", "")
+    if vf:
+        lines.append(vf)
+    else:
+        for c in clips:
+            vp = c.get("video_prompt", "")
+            vm = re.search(r"VOICE:\s*(.+?)(?:Avoid|$)", vp, re.IGNORECASE)
+            if vm:
+                lines.append(vm.group(1).strip())
+    lines.append("")
+    cta = data.get("cta_spoken", "")
+    if cta:
+        lines.append("FINAL CTA: " + cta)
     lines.append("")
     lines.append("=" * 60)
     return "\n".join(lines)
