@@ -1,5 +1,5 @@
 """
-AI News Pipeline v9
+AI News Pipeline v12
 """
 
 import os
@@ -18,7 +18,7 @@ TCHAT = os.environ.get("TELEGRAM_CHAT_ID", "")
 MAX_S = int(os.environ.get("MAX_SHORTS", "3"))
 SEEN_FILE = "seen_links.json"
 OUTDIR = "output"
-API = "https://api.mistral.ai/v1/chat/completions"
+API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 
 def load_seen():
@@ -74,8 +74,10 @@ def rank(items, count=10):
     }
     try:
         r = requests.post(
-            API, headers=headers,
-            json=body, timeout=90,
+            API_URL,
+            headers=headers,
+            json=body,
+            timeout=90,
         )
         r.raise_for_status()
         txt = r.json()
@@ -95,97 +97,120 @@ def rank(items, count=10):
         return []
 
 
+def send_tg_part(text):
+    if not TBOT or not TCHAT:
+        return False
+    url = "https://api.telegram.org/bot" + TBOT + "/sendMessage"
+    try:
+        r = requests.post(url, data={
+            "chat_id": TCHAT,
+            "text": text,
+        }, timeout=30)
+        return r.status_code == 200
+    except:
+        return False
+
+
 def send_tg(text):
     if not TBOT or not TCHAT:
-        print("TG not configured")
+        print("Telegram not configured")
         return
-    url = "https://api.telegram.org/bot"
-    url = url + TBOT + "/sendMessage"
-    chunks = []
-    while len(text) > 4000:
-        chunks.append(text[:4000])
-        text = text[4000:]
-    chunks.append(text)
-    for chunk in chunks:
-        payload = {
-            "chat_id": TCHAT,
-            "text": chunk,
-        }
-        try:
-            r = requests.post(
-                url, data=payload, timeout=30,
-            )
-            if r.status_code == 200:
-                print("  Sent to TG")
-            else:
-                print("  TG: " + r.text[:100])
-            time.sleep(1)
-        except Exception as e:
-            print("  TG: " + str(e))
+    
+    MAX = 4000
+    total_len = len(text)
+    print("  Total text length: " + str(total_len))
+    
+    if total_len <= MAX:
+        ok = send_tg_part(text)
+        print("  Sent: " + str(ok))
+        return
+    
+    parts = []
+    start = 0
+    while start < total_len:
+        end = start + MAX
+        if end >= total_len:
+            parts.append(text[start:])
+            break
+        chunk = text[start:end]
+        last_newline = chunk.rfind("\n")
+        if last_newline > MAX // 2:
+            end = start + last_newline
+        parts.append(text[start:end])
+        start = end
+    
+    print("  Splitting into " + str(len(parts)) + " parts")
+    
+    for i, part in enumerate(parts):
+        part = part.strip()
+        if not part:
+            continue
+        ok = send_tg_part(part)
+        print("  Part " + str(i+1) + "/" + str(len(parts)) + ": " + str(ok))
+        time.sleep(2)
 
 
-def send_doc(path, cap):
+def send_tg_doc(path, caption):
     if not TBOT or not TCHAT:
         return
-    url = "https://api.telegram.org/bot"
-    url = url + TBOT + "/sendDocument"
+    url = "https://api.telegram.org/bot" + TBOT + "/sendDocument"
     try:
         with open(path, "rb") as f:
-            r = requests.post(
-                url,
-                data={"chat_id": TCHAT, "caption": cap},
-                files={"document": f},
-                timeout=60,
-            )
+            r = requests.post(url, data={
+                "chat_id": TCHAT,
+                "caption": caption[:1024],
+            }, files={"document": f}, timeout=60)
         if r.status_code == 200:
             print("  Doc sent")
     except Exception as e:
-        print("  Doc: " + str(e))
+        print("  Doc err: " + str(e))
 
 
 def main():
-    print("=" * 40)
-    print("AI NEWS v9")
-    print("=" * 40)
+    print("=" * 50)
+    print("AI NEWS PIPELINE v12")
+    print("=" * 50)
     os.makedirs(OUTDIR, exist_ok=True)
     seen = load_seen()
     print(str(len(seen)) + " seen")
-    print("Fetching...")
+
+    print("\nFETCHING...")
     items = fetch_all_items(seen)
     if not items:
         print("No items.")
         return
-    print("Ranking...")
+
+    print("\nRANKING...")
     ranked = rank(items, count=MAX_S)
     if not ranked:
         print("No ranked.")
         return
     print(str(len(ranked)) + " selected")
+
     ok = 0
     for i, item in enumerate(ranked):
-        t = item.get("title_short", "AI")
+        t = item.get("title_short", "AI Update")
         narr = item.get("narration", "")
         s = item.get("source", "AI")
         lk = item.get("link", "")
         ct = item.get("type", "news")
-        vp = os.path.join(OUTDIR, "p" + str(i+1) + ".mp4")
-        print("#" + str(i+1) + ": " + t)
+        vp = os.path.join(OUTDIR, "pkg" + str(i+1) + ".mp4")
+        print("\n#" + str(i+1) + ": " + t)
         try:
-            folder, text, data = build_shorts_video(
+            folder, output_text, data = build_shorts_video(
                 t, narr, s, vp, ct
             )
-            send_tg(text[:4000])
-            jp = os.path.join(folder, "prompts.json")
-            if os.path.exists(jp):
-                send_doc(jp, t)
+            print("  Sending to Telegram...")
+            send_tg(output_text)
             seen.add(lk)
             ok += 1
         except Exception as e:
             print("ERR: " + str(e))
             traceback.print_exc()
         time.sleep(3)
+
     save_seen(seen)
-    print("Done! " + str(ok) + "/" + str(len(ranked)))
+    print("\nDONE! " + str(ok) + "/" + str(len(ranked)))
 
 
 if __name__ == "__main__":
